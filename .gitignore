@@ -1,0 +1,38 @@
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+# Python specific
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+*.pyc
+
+# 환경 설정 파일
+.env
+
+# 가상 환경 디렉터리
+venv/
+env/
+newenv/
+
+# macOS specific
+.DS_Store
+
+# 로그 파일
+*.log
+
+# OS generated files
+Thumbs.db
+
+# IDE specific files
+.idea/
+.vscode/
+
+# Temp files
+temp/
