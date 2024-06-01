@@ -18,26 +18,22 @@ from .model.imageModel import faceDetection, faceExtraction, imageModel
 router=APIRouter()
 
 @router.post("/upload-video/{roomID}/{userID}/{count}")
-async def upload_video(roomID: float, userID : float, count : int, file: UploadFile = File(...)):
+async def upload_video(roomID: float, userID : float, count : int, audiofile: UploadFile = File(...),videofile: UploadFile = File(...)):
     #백엔드 url
     base_url = "http://43.203.209.38:8080"
     #stt
-    temp_file_path = None
-
-    if temp_file_path and os.path.exists(temp_file_path):
-        os.remove(temp_file_path)
-        
-    temp_file_path = await save_temp_file(file)
+    temp_audio_file_path = await save_temp_file(audiofile)
+    temp_video_file_path = await save_temp_file(videofile)
 
     try:
-        if temp_file_path and os.path.exists(temp_file_path):  # 파일 경로 확인
-            sr = get_sample_rate(temp_file_path)  # 파일 샘플 레이트 추출
-            df = stt(temp_file_path)  # 음성 인식
+        if temp_audio_file_path and os.path.exists(temp_audio_file_path):  # 파일 경로 확인
+            sr = get_sample_rate(temp_audio_file_path)  # 파일 샘플 레이트 추출
+            df = stt(temp_audio_file_path)  # 음성 인식
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")  # 로그에 오류 메시지 출력
-        if temp_file_path and os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
+        if temp_audio_file_path and os.path.exists(temp_audio_file_path):
+            os.remove(temp_audio_file_path)
         raise HTTPException(status_code=500, detail=str(e))
     
     #STT POST
@@ -88,7 +84,7 @@ async def upload_video(roomID: float, userID : float, count : int, file: UploadF
     img_final_score_list = []
     score = []
 
-    cap = cv2.VideoCapture(temp_file_path)
+    cap = cv2.VideoCapture(temp_video_file_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
     interval = 0.2
     frame_interval = int(fps * interval)
@@ -141,6 +137,14 @@ async def upload_video(roomID: float, userID : float, count : int, file: UploadF
         raise HTTPException(status_code=500, detail=str(e))
 
     #초기화
+    if temp_audio_file_path and os.path.exists(temp_audio_file_path):
+            os.remove(temp_audio_file_path)
+            print(f"Deleted temp audio file: {temp_audio_file_path}")
+            
+    if temp_video_file_path and os.path.exists(temp_video_file_path):
+            os.remove(temp_video_file_path)
+            print(f"Deleted temp video file: {temp_video_file_path}")
+
     score.clear()  # 다음 파일을 위해 score 리스트 초기화
     cap.release()
 
