@@ -1,6 +1,7 @@
 import cv2
 import os
 import subprocess
+import uuid
 from fastapi import File, HTTPException, UploadFile, APIRouter
 import numpy as np
 import pandas as pd
@@ -18,14 +19,14 @@ from .model.imageModel import faceDetection, faceExtraction, imageModel
 router = APIRouter()
 
 async def convert_webm_to_mp3(input_path: str, output_path: str):
-    command = ['ffmpeg', '-i', input_path, '-q:a', '0', '-map', 'a', output_path]
+    command = ['ffmpeg', '-y', '-i', input_path, '-q:a', '0', '-map', 'a', output_path]
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"Error converting to mp3: {e}")
 
 async def convert_webm_to_mp4(input_path: str, output_path: str):
-    command = ['ffmpeg', '-i', input_path, '-c:v', 'libx264', '-c:a', 'aac', output_path]
+    command = ['ffmpeg', '-y', '-i', input_path, '-c:v', 'libx264', '-c:a', 'aac', output_path]
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
@@ -35,11 +36,12 @@ async def convert_webm_to_mp4(input_path: str, output_path: str):
 async def upload_video(roomID: float, userID: float, count: int, audiofile: UploadFile = File(...), videofile: UploadFile = File(...)):
     base_url = "http://43.203.209.38:8080"
     
+    unique_id = uuid.uuid4().hex
     temp_audio_file_path = await save_temp_file(audiofile)
     temp_video_file_path = await save_temp_file(videofile)
     
-    temp_mp3_path = temp_audio_file_path.replace(".webm", ".mp3")
-    temp_mp4_path = temp_video_file_path.replace(".webm", ".mp4")
+    temp_mp3_path = temp_audio_file_path.replace(".webm", f"_{unique_id}.mp3")
+    temp_mp4_path = temp_video_file_path.replace(".webm", f"_{unique_id}.mp4")
 
     await convert_webm_to_mp3(temp_audio_file_path, temp_mp3_path)
     await convert_webm_to_mp4(temp_video_file_path, temp_mp4_path)
