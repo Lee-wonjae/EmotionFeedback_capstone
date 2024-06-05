@@ -14,7 +14,26 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     libglib2.0-dev \
     build-essential \
-    ffmpeg
+    ffmpeg \
+    libvpx-dev \
+    libvorbis0a \
+    libopus0 \
+    libx264-dev \
+    libx265-dev \
+    libwebp-dev \
+    libass-dev \
+    libfreetype6-dev \
+    libfribidi-dev \
+    libmp3lame-dev \
+    libopenjp2-7-dev \
+    libopus-dev \
+    libtheora-dev \
+    libvorbis-dev \
+    libxvidcore-dev \
+    libaom-dev \
+    libdav1d-dev \
+    libsvtav1-dev \
+    && apt-get clean
 
 # ffmpeg와 ffprobe가 설치되었는지 확인
 RUN ffmpeg -version && ffprobe -version

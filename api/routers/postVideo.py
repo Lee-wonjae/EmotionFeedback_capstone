@@ -1,11 +1,13 @@
 import cv2
 import os
-import subprocess
+import asyncio.subprocess
 import uuid
 from fastapi import File, HTTPException, UploadFile, APIRouter
 import numpy as np
 import pandas as pd
 import requests
+import asyncio
+import aiofiles
 from sklearn.preprocessing import StandardScaler
 from api.routers.model.voiceModel.audioCut import audio_cut
 from .schemas import emotion_Result, stt_Result
@@ -15,22 +17,21 @@ from .model.voiceModel.textEmbedding import text_embedding
 from .model.stt.saveTempFile import save_temp_file
 from .model.imageModel import faceDetection, faceExtraction, imageModel
 
-
 router = APIRouter()
 
 async def convert_webm_to_mp3(input_path: str, output_path: str):
     command = ['ffmpeg', '-y', '-i', input_path, '-q:a', '0', '-map', 'a', output_path]
-    try:
-        subprocess.run(command, check=True)
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Error converting to mp3: {e}")
+    process = await asyncio.create_subprocess_exec(*command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    stdout, stderr = await process.communicate()
+    if process.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"Error converting to mp3: {stderr.decode()}")
 
 async def convert_webm_to_mp4(input_path: str, output_path: str):
     command = ['ffmpeg', '-y', '-i', input_path, '-c:v', 'libx264', '-c:a', 'aac', output_path]
-    try:
-        subprocess.run(command, check=True)
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Error converting to mp4: {e}")
+    process = await asyncio.create_subprocess_exec(*command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    stdout, stderr = await process.communicate()
+    if process.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"Error converting to mp4: {stderr.decode()}")
 
 @router.post("/upload-video/{roomID}/{userID}/{count}")
 async def upload_video(roomID: float, userID: float, count: int, audiofile: UploadFile = File(...), videofile: UploadFile = File(...)):
@@ -71,10 +72,23 @@ async def upload_video(roomID: float, userID: float, count: int, audiofile: Uplo
     X_audio = audio_cut(df)
     dfText = pd.DataFrame(df['text'])
     print(X_audio.shape, dfText.shape)
-    X = pd.concat([X_audio, dfText], axis=1)
+    
+    if X_audio.empty or dfText.empty:
+        raise HTTPException(status_code=400, detail="Audio or Text data is empty")
+
+    # X_audio와 dfText를 병합하기 전에 2D 배열로 변환
+    X_audio = X_audio.values.reshape(-1, 1)
+    dfText = dfText.values.reshape(-1, 1)
+    
+    X = np.concatenate([X_audio, dfText], axis=1)
+    
     txt_embed = text_embedding(model_name='jhgan/ko-sbert-multitask')
-    scaler = StandardScaler()
     X = txt_embed.transform(X)
+    
+    if X.size == 0:
+        raise HTTPException(status_code=400, detail="Transformed text embedding resulted in an empty array")
+    
+    scaler = StandardScaler()
     X = scaler.fit_transform(X)
 
     model = Audio_text_model()
@@ -149,15 +163,17 @@ async def upload_video(roomID: float, userID: float, count: int, audiofile: Uplo
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    if temp_mp3_path and os.path.exists(temp_mp3_path):
-        os.remove(temp_mp3_path)
-        print(f"Deleted temp mp3 file: {temp_mp3_path}")
-            
-    if temp_mp4_path and os.path.exists(temp_mp4_path):
-        os.remove(temp_mp4_path)
-        print(f"Deleted temp mp4 file: {temp_mp4_path}")
+    finally:
+        # 임시 파일 삭제
+        if temp_mp3_path and os.path.exists(temp_mp3_path):
+            os.remove(temp_mp3_path)
+            print(f"Deleted temp mp3 file: {temp_mp3_path}")
+                
+        if temp_mp4_path and os.path.exists(temp_mp4_path):
+            os.remove(temp_mp4_path)
+            print(f"Deleted temp mp4 file: {temp_mp4_path}")
 
-    score.clear()
-    cap.release()
+        score.clear()
+        cap.release()
 
     return
