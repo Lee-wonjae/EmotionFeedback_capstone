@@ -28,7 +28,6 @@ This project, "Emotion Feedback," aims to recommend conversation topics for vide
 11. [Evaluation and Future Plans](#evaluation-and-future-plans)
 12. [Team and Contributions](#team-and-contributions)
 13. [License](#license)
-14. [Contact](#contact)
 
 ## Problem Statement
 
