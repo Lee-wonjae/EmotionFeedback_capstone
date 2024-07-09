@@ -23,11 +23,9 @@ This project, "Emotion Feedback," aims to recommend conversation topics for vide
 6. [Performance Metrics](#performance-metrics)
 7. [Recommendation Types](#recommendation-types)
 8. [System Architecture](#system-architecture)
-9. [Installation](#installation)
-10. [Usage](#usage)
-11. [Evaluation and Future Plans](#evaluation-and-future-plans)
-12. [Team and Contributions](#team-and-contributions)
-13. [License](#license)
+9. [Evaluation and Future Plans](#evaluation-and-future-plans)
+10. [Team and Contributions](#team-and-contributions)
+11. [License](#license)
 
 ## Problem Statement
 
